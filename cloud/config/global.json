@@ -1,0 +1,14 @@
+{
+    "applications": {
+        "_default": {
+            "link": "eventfilter"
+        }, 
+        "eventfilter": {
+            "applicationId": "Qlbg8roXaC5pJZsFmxBgnxUzBcmNShAXNNbkhWuh", 
+            "masterKey": "1L1K6rgA5JXNcTsNlSgV0gx8BZQopeplkj9WXEq4"
+        }
+    }, 
+    "global": {
+        "parseVersion": "1.2.13"
+    }
+}

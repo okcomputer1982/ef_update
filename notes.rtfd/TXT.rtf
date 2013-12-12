@@ -1,0 +1,805 @@
+{\rtf1\ansi\ansicpg1252\cocoartf1265
+{\fonttbl\f0\froman\fcharset0 Times-Roman;}
+{\colortbl;\red255\green255\blue255;}
+\margl1440\margr1440\vieww12600\viewh14000\viewkind0
+\deftab720
+
+\itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clmgf \clvertalc \clshdrawnil \clwWidth5380\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx2160
+\clmrg \clvertalc \clshdrawnil \clwWidth5380\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx4320
+\clmrg \clvertalc \clshdrawnil \clwWidth5380\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx6480
+\clmrg \clvertalc \clshdrawnil \clwWidth5380\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+
+\itap2\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
+\clvertalc \clshdrawnil \clwWidth5300\clftsWidth3 \clmart10 \clmarl10 \clmarb10 \clmarr10 \clbrdrt\brdrnil \clbrdrl\brdrnil \clbrdrb\brdrnil \clbrdrr\brdrnil \clpadl0 \clpadr0 \gaph\cellx8640
+\pard\intbl\itap2\pardeftab720
+
+\f0\fs24 \cf0 So\'85\
+\
+We have the database made.\
+Now what I want to do is make a quick api that allows me to populate the thing in a way that makes sense\
+\
+I can either try using the build in parse api or create my own in javascript.\
+\
+I\'92d like to at least take a look at how parse does it natively\'85\
+\
+is there another reason why I would want to control it? What kind of querys do I want to make of this thing?\
+\
+create\
+            /user - done\nestcell \lastrow\nestrow\cell 
+\pard\intbl\itap1\cell 
+\pard\intbl\itap1\cell 
+\pard\intbl\itap1\cell \lastrow\row
+\pard\pardeftab720
+\cf0  	/event - done\
+	/venue -done\
+\
+read(query)\
+	/user\
+       	/event\
+	/venue\
+\
+SO here is the thing with read\
+we have to handle queries in this thing, as well as the difference between retrieving lists of items verses retrieving individual items\
+that may not be a problem now that both event and event details is put into the same object\
+BUT what about querying\
+Ideally, I want to have reads be specific to my data\
+	find events that are\'85\
+	well ya\
+	this is the meat and potatoes of the application\
+	how do I make this api friend and ready to search\
+Sticking to events:\
+	What are some event with a given tag?\
+		this depends on each tag being unique\
+		ideally I want to force uniqueness on a tag name\
+\
+	What are some events with a given discipline?\
+		same thing as with tags\
+		ideally I want to force uniqueness on a tag name\
+		this makes me think I should go ahead and create the tag/discipline databases already\'85\
+		I can go ahead and add them to creation and do the rest of the CRUD with them in mind\
+		let\'92s do that shit\'85\
+\
+	What event occur within a given time?\
+	Within a given location and mile radius?\
+	Under a certain cost?\
+	Within a certain date range?\
+	With a certain text within it\'92s name?\
+	With a certain text within it\'92s description?\
+	assostated with a certain profile?\
+	administrated by a certain profile?\
+	created by a certain user?\
+	\
+	With a specific amount of items returned,\
+	for the xth page of that item amount,\
+	capped at how many item\
+	and finally, allow for any combination of these query types?\
+	\
+	I know I want one function to met this out.\
+	I want to add an array that allows me generate a query object.\
+\
+	we can assume that any query can include multiple values\
+	EVENTS\
+	\
+\
+update\
+	/user\
+	/event\
+	/venue\
+\
+delete\
+	/user\
+	/event\
+	/venue\
+________________\
+friday 11/22\
+\
+both tag and discipline have been completed for read\
+now\'85it would be nice to implement adding tag reference when putting in an event/venue and profile.\
+this will require that both of these field be checked for existence before added.\
+there is also the matter of what we use to reference tags and disciplines\
+I\'92m leaning towards just saving the names of the tags, disciplines themselves:\
+	they are unique now\
+	and it will be make the database easier to hand read/edit\
+\
+SO, the next step will be to \
+________________\
+sunday 11/24\
+\
+Ok, so events now can get tag names.\
+\
+So I fixed the disciplines so that it checks both for a lack of existence and for parent existence.\
+\
+is this it for creation?\
+\
+hmm\'85venues will also have tags and disciplines\'85.\
+in there:\
+\
+What is the next BIG thing.\
+well. I want to start read for each thing\'85but then I will have to deal with querying in a real way.\
+there is update after that\'85querying\'85well reading really\'85 is necessary for that to happen\
+and then we have what, removal. That\'85will also require reading.\
+I will also need start making a real structure of the thing thing instead of putting it in test code.\
+that should happen before I add the rest of the crud really.\
+then I need to make it accessible through an express style api\
+then I put it up on node and test the hell out of it\'85\
+and at that point, I will have a functional first pass at an event management api.\
+What happens then?\
+Well, Facebook integration for users would be nice.\
+I wouldn\'92t mind getting some test data\'85maybe seeing how I can scrap for data using the create methods?\
+probably first, though, I\'92m going to need a very simple user interface for the thing, just so the loop can be closed.\
+Nice to haves?\
+how would list serves be implemented into this thing?\
+making a mobile page right fast.\
+and above all things, if we are going the ideal route here, can I integrate event filters data directly.\
+Other features:\
+google calendar integration\
+export and import.\
+again, a general plugin system for loading in new data from anywhere\
+can we post Facebook events, custom twitter messages, indivsial and lists eve wide emails?\
+\
+Again, I don\'92t want to touch user interface yet.\
+Let\'92s just get as many features in during this break as possible\
+because lets face it, at this rate it\'92s going to take a few months, assuming I stick with it\'85\
+\
+But it would be great if in the new year, I have something to present to Jeremy.\
+See how it goes\'85\
+\
+TODO:\
+venues should have a uniqueness - DONE\
+transfer to a plugin - DONE\
+\
+NOOOSE\
+\
+SOOO!!!!\
+next we have the query  shit:\
+\
+Sticking to events:\
+	What are some event with a given tag?\
+		this depends on each tag being unique\
+		ideally I want to force uniqueness on a tag name\
+\
+	What are some events with a given discipline?\
+		same thing as with tags\
+		ideally I want to force uniqueness on a tag name\
+		this makes me think I should go ahead and create the tag/discipline databases already\'85\
+		I can go ahead and add them to creation and do the rest of the CRUD with them in mind\
+		let\'92s do that shit\'85\
+\
+	What event occur within a given time?\
+	Within a given location and mile radius?\
+	Under a certain cost?\
+	Within a certain date range?\
+	With a certain text within it\'92s name?\
+	With a certain text within it\'92s description?\
+	assostated with a certain profile?\
+	administrated by a certain profile?\
+	created by a certain user?\
+	\
+	With a specific amount of items returned,\
+	for the xth page of that item amount,\
+	capped at how many item\
+	and finally, allow for any combination of these query types?\
+	\
+	I know I want one function to met this out.\
+	I want to add an array that allows me generate a query object.\
+\
+	we can assume that any query can include multiple values\
+\
+_______________\
+Wednesday Nov 27th\
+\
+So, it is onward to reading/querying!!!\
+I\'92m thinking we could start with querying of tags and disciplines to set the base and then moving to events, once a foundation is laid.\
+\
+So, how do we want to do this with\'85Tags!\
+search by \
+	title\
+	objectID\
+	description\
+	createdAt\
+	updatedAt\
+\
+allow an array of items to be search against each\
+allow for a range for all date types (and numerical) types\
+allow for full text search for description\
+allow for full text search for title\
+\
+allow and for each type\
+\
+and return after a search:\
+	objectId, time, createdAt, updatedAt, description\
+	or a subset, also passed in as an array\
+\
+also set the return limit and page returned based on that limit\
+and the ordering!?! Which column, ascending or decending\
+\
+so for this hypothetic read function we will need\
+\
+\pard\pardeftab720
+
+\b \cf0 the type (table)\
+	
+\b0 for now assume tag\
+
+\b the search query object
+\b0 \
+	objects array each representing a search query\
+	[\{	col_name: name\
+		searchType: \'93range/full_text/equal/less_then/greater_then\'94,\
+		values:[\'93value1\'94, \'93value2\'94] (if range, assume only two values, if less_then, greater_then, on test first value\
+	 \}]\
+\
+
+\b an ordering object\
+\pard\pardeftab720
+
+\b0 \cf0 	\{\
+	 column:\'94column_name\'94,\
+	 direction:\'94acceeding/decending\'94\
+	\}\
+\
+\pard\pardeftab720
+
+\b \cf0 a pagination object
+\b0 \
+	\{\
+		limit:the items on a page,\
+		page:page number\
+	\}\
+\
+and that would be it I think\
+var read = function(type, query, request, ordering, pagination) \{\
+\}\
+\
+______\
+got the search query object implemented.\
+hung the fuck.\
+may go get my mice and be out\'85\
+\
+_______\
+back. lets get the \
+_______\
+ummm\'85yah so where\'85.done :)\
+read is finished for tags!\
+\
+now let\'92s give disciplines a try\'85\
+______\
+what kind of disciplines query are we doing now?\
+everything is the same as \
+________\
+I am tempted to say I am done with reading, which would be amazing\
+I do think I will have to separate cost range into separate cols, though, otherwise I will not really be able to query for them\
+this also feels like a great time to introduce a unit testing framework goddamn it\
+it really does.\
+\
+Lets sort of kind of pertend I never said that.\
+would love to dig into a general framework for working with javascript yeomen and what not\
+that weed is getting to my head. I need to chill on it.\
+\
+next major though, is Update, the u of crud\
+\
+we will only update a single element, but that what if we did not?\
+I wouldn\'92t mind being able to take a full array of database objects and assign things to them.\
+let\'92s do that as a default.\
+\
+I think update will just be a query with a other stuff built in\
+well, or I could just get the obj and pass them back in\
+hmmm\'85.\
+well, I could abstract out the two parts behind the scene, but by default update will do both for me\
+we already get an array of parse objects from read\
+if our update function includes an array of name/value pairs that we then put on each value returned from the query we will be set\
+\
+ok\
+\
+var update = function(type, query, value) where\
+	update = [\{column:\'94name\'94, type:\'94replace/add\'94 (add only works with arrays), value:\'94value\'94\}]\
+\
+and that\'92s basically that shit in a nut.\
+\
+then we got us remove\
+var remove = function(type, query);\
+\
+and that is basically it\
+I really should see about implementing unit testing in here, this is going quick, I need to learn it and it will make later issues a lot easier to deal with.\
+\
+but first chicken\'85\
+________________\
+Thursday nov. 28th Tday 2013\
+\
+So on further though, I realize now that there are some issues I should stomp now before moving to update.\
+Included in these are:\
+1. Designing a solid system for recurring events.\
+2. Adding geolocation to veneues and users\
+3. Add location based querying to venues (and the system in general)\
+4. Add a testing framework to the whole thing.\
+\
+All pretty major shit.\
+Let\'92s start with events\
+\
+for now there is a field that includes the timing_mode and a occurrence array that holds explicitly made individual events and recurrence information.\
+\
+it\'92s a clever solution if we were actually able to query for when an event takes place\
+allas, we cannot.\
+\
+on some level, events must have an explicit date connected to them.\
+one way to look at this is that events can share data between themselves.\
+some events are created with pointers to a parent event, with only the date and time changes\
+\
+we can also only allow single events to be created, which I will switch to if this takes to long\
+\
+then there is having a separate table for recurring events.\
+\
+Again though, based on querying, it is best to have individual event items always be one to one.\
+hmmm..lets say any search for events include a search for a recurrence table\
+this table will have a start date, end date, how recur_type and data and all the other data assosated with an event\
+or it could just have a pointer to an event\
+\
+any search for an event must search for both, with date queries being handled slightly differently based on the table\
+because here\'92s the thing:\
+	if we are doing a query on the recur_events table we would want all events between the times when that event is in 		existance\
+	first, go for individual items\
+	then create additional events for the results\
+	and then do your reordering with the new final listing of events\
+	\
+so we would have to handle in this case, the ordering not to database event items, but cached ones!\
+and on cached items, we would need to be able to do sorting (pagation might also be good, querying is my limit)\
+\
+so if it\'92s up to me along, I would have to different kinds of event tables. events and event_recur.\
+I\'92d also have to see exactly how I want to handle the base form that events and object in general take in this thing.\
+Caching I mean.\
+\
+So that\'92s the thought.\
+\
+Let\'92s see what other people have done with this kind of thing\'85\
+\
+So I\'92m seeing so far systems where this a parent event table that holds no real event data and event_occerances that holds actual events. \
+\
+This would recur some kind of regular generation of new event_occerances for items, and that is really based on whatever random query comes through.\
+\
+It seems like I could lead to a lot of waste rather then having range elements and one time items differently.\
+What we could do is have a event_parent table, event_one_time and event_ranged\
+\
+event_parent would have all of our base data, \
+	event_one_time would have single events\
+	event_range would have ranged events\
+		still though, it\'92s going to be tough to calculate recurrences within a query\
+		it\'92s a two step query,\
+			first for all items within a date range,\
+			then all dates that conform to the recurrence algorithm for that date range\
+			so what? do we just handle the translate of that client side?\
+			wait, no. Here is the thing\
+			I am building the api right now, that is what I am doing\
+			all this code is going to be pushed up into the server through node.js at some point\
+			so all the processing will be done here\'85yes\
+			i really should think about the data format I am sending this thing out in\
+			because if I am going to have to create new event objects in here, they are obviously not going to conform to 			the Parse framework\
+			they will be sparser then that\'85and don\'92t even get me started on caching server data and connecting the two\
+			that I don\'92t think I will be dealing with\
+			\
+			BUT a real model that is different then the parse object that we will be sending and getting would be nice\
+\
+			should I make the models first or deal with event querying?\
+			I think event querying first\
+			but I can\'92t actually send back in all my data until the model (and collections) are done.\
+			hey and here\'92s a prize for ya\'85should this thing use backbone or should I stick to my own model objects for 				now?\
+			I\'92m thinking my own, but some support for collections would be nice\
+			you know what, I can also do a normal array sort on these things\
+			I really do want to keep it simple for as long as I can.\
+			Normal objects for now.\
+\
+I think I should make the models first\
+it\'92s a big change, but much of the work has already been done.\
+Event Model\
+Venue Model\
+Tag Model\
+Discipline Model\
+User Model\
+\
+these models serve as the go between for users and the database\
+\
+hmmm\'85this is so big in a way I kind of want to check out geoLocations first\
+that is cool and quicker change potentially\
+then I will not have to push it in through this new go-between\
+let\'92s do it\
+______________\
+pssss\
+\
+pssssssss\
+\
+geoloactions are in\
+and they work\
+\
+sure, I\'92d love to add google maps support to automatically convert address to geolocations when a venue is created,\
+but that does not take precedence right now.\
+\
+models does\
+\
+oh god, do I even know what I am doing with models?\
+\
+so, that main reason I am doing this is because I don\'92t want the user to have access to a parse object directly\
+I would rather have a model that makes the values central to each object be up front and maybe create a link to the parse object, so it can be cached and updated without going back into the database.\
+of course that means one more thing to garbage collect and I would really rather not have to do that\
+\
+so maybe I should just default to models with no connect to the database for now\
+I can always use a different model for that\
+\
+how will this factor into the js\
+I suppose I could make a models.js file that holds \
+	window.models.Event/Venue/etc.\
+	then I can ale use to them within code.js\
+	should be easy peasy really\
+	from there I create new objects using my models as prototypes(?) give and take these values as I would\
+	I wonder weither I should attached this and all object like this to the ef_database, as oppose to window\
+	I know this is the better way to go about it, but it\'92s a little bit of a work around for now\
+	I\'92m not sure what the protocol is\'85probably unnessisary\
+	\
+	anyway, I\'92ll do this tomorrow.\
+_______________\
+Friday Nov. 29th\
+\
+so\'85I\'92ve done the models\'85\
+what about passing them in?\
+I think I\'92m good for that\'85\
+\
+what else we got here.\
+testing is huge.\
+events recurrences\
+some other interesting queries we can talk about:\
+	what events are within a certain radius?\
+also wouldn\'92t mind getting that the address/api working\
+\
+I want to finish listening to this PODCAST THOUGH!!!!\
+lets see if I can get an latitude/long working\
+______________\
+ok, I kind of see how this works\
+really the first thing I have to do is clear my database in order to test this thing properly\
+then I need to make a list of all the tests I will need for my current code\
+then build a database that accommodate those tests\
+then write the tests\
+then run the tests and see if it clears\
+but first! sleep\'85\
+______________\
+Saturday Nov. 30th\
+\
+done the database clear\
+\
+so this would be the perfect time to implement tests for all of my create code\
+though I would love for one of those test to be on the auto creation of long/lat\
+I kind of want to steal that code for it before i proceed\
+done\
+\
+good damn that was quick\
+\
+I want to see why user will not delete along with everyone else though..\
+may leave that be\
+\
+the next thing would be to design my tests.\
+that can DEFINATELY wait for tomorrow.\
+\
+_____________\
+so it\'92s technically still today, but I know what I meant by that\
+I am not looking forward to this part.\
+I feel like I need to do more research into testing, then again, always good to build something from scratch the first time\
+I can always move to a testing framework once I get how to build it from scratch.\
+\
+Before I do anything, let\'92s go ahead and list out the type of commands I will need to test and fill out on of them:\
+\
+
+\b Helpers:
+\b0 \
+codeAddress:\
+	if no address given returns (on promise) \{-1,-1\}\
+	if address is given, returns (on promise) expected lat/long pair \
+	if error, degrades gracefully\
+\
+getTable:\
+	if no type given, returns null\
+	if given a user, discipline, event, tag, or venue, returns appropriate Parse object\
+\
+dataExists:\
+	given a findable column and data element, returns (on promise)\
+	if not appropriate type, what is the behavior\
+	if no type, what is the behavior\
+\
+	if not appropriate column, what is the behavior\
+	if no column, what is the behavior\
+\
+	if not data is not founded, what is the behavior\
+	if no data, what is the behavior\
+\
+listExists\
+	if all object in list are found, does it return the appropate list elements\
+	if all object in list are no found, does it return the approprate list elements\
+	if half of the objects in list are found, does it return the appropriate list elements\
+	if empty list is provided, what is the behavoir\
+\
+	if not appropriate type is provided, what is the behavoir\
+	if no type is provided, what is the behavior\
+	\
+	if not appropriate col is provided, what is the behavior\
+	if no col is provided, what is the behavior\
+\
+validate:\
+	if no type is given, returns an error\
+	User:\
+		If no username, returns error.\
+		If no email, returns error.\
+		if no password, returns error.\
+		(if week password, returns error)\
+		\
+		If username already exists, does it return an error?\
+		If a tag is attached that does not exist, does it return an error?\
+		If a discipline is attached that does not exist, does it return an error?\
+			\
+		\
+	Venue: \
+		If no title, returns error.\
+		If no address, returns error.\
+		If no city, returns error.\
+		If no state, returns error.\
+		If createdBy exists, automatically add to admin_users.\
+	\
+		Is the appropriate lat/long added to the data?\
+		If a tag is attached that does not exist, does it return an error?\
+		If a discipline is attached that does not exist, does it return an error?\
+	\
+	Event:\
+		If no title, returns an error\
+		If no venue, returns an error\
+		If no cost, auto set to zero.\
+		If no timing_mode, set to one-time.\
+		If createdBy exists, automatically add to admin_users.\
+		\
+		If a tag is attached that does not exist, does it return an error?\
+		If a discipline is attached that does not exist, does it return an error?\
+		\
+\
+	Tag:\
+		If no title, returns an error		\
+		If a tag with title already exists, does it return an error?\
+\
+	Discipline:\
+		If no title, returns an error\
+		If parent does not exist, returns an error.\
+		If a discipline with title already exists, does it return an error?\
+		\
+	\
+\
+
+\b CRUD:
+\b0 \
+create:\
+	if no type is given returns an error.\
+	if no data is given, what is the behavior\
+\
+	User:\
+		Does it appropriately create a User?\
+		Does it pass through validation tests for user?\
+\
+	Venue:\
+		Does it appropriately create a Venue?\
+		Does it pass through validation tests for venue?\
+\
+	Event:\
+		Does it appropriately create an Event?\
+		Does it pass through validation tests for event?\
+	\
+	Tag:\
+		Does it appropriately create an Tag?\
+		Does it pass through validation tests for tag?\
+\
+	Discipline:\
+		Does it appropriately create an Discipline?\
+		Does it pass through validation tests for Discipline?\
+\
+read\
+	if no type is given, returns an error.\
+	User:\
+		if no query_params are given, returns all values\
+\
+	Venue:\
+		if no query_params are given, returns all values\
+	Event:\
+		if no query_params are given, returns all values\
+	Tag:\
+		if no query_params are given, returns all values\
+__________\
+Monday Dec. 2nd\
+Just as a note\'85.testing interface is done and I\'92ve done tests on two of the three helper functions.\
+A test focused approach to development is making more and more sense.\
+It\'92s making me focus a lot more on the functionality of each component and how the whole thing works as a whole.\
+Now it\'92s time to see what kind of database I will need to create in order to make the rest of the test make sense.\
+\
+________\
+Tuesday Dec. 3rd.\
+Ok\'85\
+\
+if we are going any further, we need a good robust database to test this shit with.\
+I\'92m taking tags, disciplines, events, venue, users, the works.\
+Enough to do some interesting queries.\
+So\'85let\'92s see if we can make an event listing first\
+this may be a good time to use a spreadsheet\
+\
+it\'92s super simple, but it works actually\
+it also brings up the very pertinate question of if we are saving the names of items or there ids\
+the thing about using ids is that it is very likely we will be changing the names of tags, disiciplines of venues.\
+Thus if we are changing a value we will need to do a search through ALL event (and user and venue) items in order to change them if not correctly formatted.\
+\
+this is cheap in in the small case, but gets to be big pretty quickly.\
+\
+the alternative is adding the ids as a string array or going ahead and figuring out how to do relations for these items and adding this into create.\
+\
+I feel I should go ahead and do this before I move forward with testing.\
+And while I\'92m at it, I should go ahead and create a solution for my event occurrence problem, add that to read for events and create as well.\
+\
+that way I can create my test database based on a feature complete  schema.\
+\
+I think that is the word, bird.\
+\
+______________\
+middle wear.\
+SO, the two issues to be solved are the use of relations instead of string arrays and the rebuilding of events occurrence system.\
+relations use will only be solved through experimentation but at the very least i know how events can be structured:\
+\
+eventData - holds all data but time, as well as a timing mode and all-day flag. (check out date parameter to see if it can be switched off\
+eventOccurances - holds a pointer to eventData as well all timing for one time events\
+eventRecurance - holds a pointer to eventData as well as all timing for recurring events\
+		     must be configured so it can be queried well. \
+\
+alright:\
+so it looks like one to many relationships are model using objects\'85as in SAVING object whole sale that are created from the table definitions of other objects. Get me? Good.\
+\
+So let\'92s just make those two other databases and configure create to accommodate the change.\
+\
+eventData\
+	\'85.  \
+	date_mode [occurrence, recurrence]\
+	occur_obj: eventOccurance relation\
+	\
+eventOccurences:\
+	event_data : the event object pointer\
+	time_mode : [either \'93fixed\'94 or \'93all-day\'94]\
+	start_date  : date object \
+	end_date   : date object\
+\
+	recurs: boolean\
+	start_recurance:\
+	end_recurance: \
+	unit: \'93every_day/day_of_month/x_days/day_of_the_week\'94\
+	amount1: string\
+	amount2: string\
+	\
+I need a join here\'85sigh.\
+\
+the first thing I need is a join between events, event occurrences and event recurs\
+all the rest of the entries act as expected\
+for date, we search on start_date - end_date and on start_recurance and end_recurance (if end_recurance exists)\
+all start_date/end_date pairs pass.\
+recurrences will need to be added as calculations base on their unit type\
+\
+ok\'85can I do a two level query?\
+\
+first I do all queries not related to date\
+	that gives me a list of eventDate objects\
+\
+then I get a list of all eventOccurance objects\
+if we have a query based on date/time\
+	search for date/time range for all recurs == false over start_date && end_date\
+	search for date/time ranges for all recur == true over start_recur && end_recur\
+	\
+convert all recur==false directly to event objects put in results array\
+for each recur==true object\
+	calculated the object that come between based on unit and amount values\
+	create an individual event object\
+	add to the results array\
+\
+return results array\
+______________________________\
+\
+I think that is the way it\'92s going to go.\
+if I could do joins I would create an uber array of all events and eventOccurances and do one query on that, but it doesn\'92t look like I have that ability.\
+\
+Which makes me wonder if I should move away from parse at this point\'85.\
+\
+What this is leading to is modularizing my CRUD for different types, rather then have on system\
+I will stick to parse for now and keep the parts that could be refactored in the future separate.\
+\
+for now, though, I think this is the game plan.\
+\
+while I am at it. I\'92d like to give a look at how files are stored in parse as well.\
+I wonder if I should do that before or after working on the modularization of my creates/queries (we have not even talk about how this will effect creation)\
+\
+sigh.\
+______________________________\
+\
+so\'85let\'92s pretend I was actually going to do this.\
+and by this I mean support events with occurrences\
+first on create, the object will need to be different\
+\
+______________________________\
+Wednesday Dec. 4th 2013\
+Oh\'85hmmm\'85I did work on this yesterday.\
+Weird.\
+so when we are creating an event:\
+______________________________\
+so!!!\
+\
+looks like we have create finished for events using the new recurrence system\
+that, though\'85WAS THE EASY PART!!!\
+\
+now we have to do queries\
+thankfully now that I have consolidated the design into two tables its a little easier to do\
+I\'92m hoping relations can also help\
+\
+here is the deal.\
+1. ANY time I look for events I will either be doing data searches or date/time searches\
+\
+2. we always check to see if we are doing data searches first and do that shit on eventData\
+   if there is no data search, just grab all of the eventData objects\
+\
+3. from there, we need to collect all occurrence object associated with these eventData objects\
+\
+4. THEN, if we are doing time/date searches, do (if recurs === true) on start_date, end_date or (if recurs === false) on start_recurance, end recurance.\
+\
+5. for all occurrence object that survive this pass, get all recur events and generate days that are included based on unit, amount1, amount2\
+\
+6. Create individual event items with correction linkage to eventOccur objects to return to the user.\
+\
+FUN!!!!\
+But doable, for sure. I understand the problem, which is really the most important thing.\
+______________________________\
+Sunday Dec. 8th 2013\
+\
+SO LONG!!!\
+I\'92m a bit lost mentally, but that\'92s cool.\
+It\'92s just time to move.\
+So in order to correctly make and test this read function, I am going to need a base database in order to correctly test it.\
+So, let\'92s do that.\
+\
+good stuff\
+\
+I think I have a template for a full testing database.\
+Now, I would like to put all this data into my current parse database\
+but first, lets make sure that my creation tools are fully tested\'85.\
+______________________________\
+so, there are not creation testing tools yet, but that is ok\
+it\'92s the process, not the goal\
+\
+I have the entire testing database in and I can automatically create the thing\
+removal also works (though not for users I think\'85\
+\
+seems I can only delete using using cloud functions\
+\
+on the one hand, great opportunity to try out cloud code\
+\
+on the other, it\'92s a distraction I don\'92t nessisary need.\
+\
+that leans toward do it\'85\
+\
+let make a list:\
+1. install cloud code to remove users\
+2. Continue testing scripts for helpers.\
+3. Do new read/query for events.\
+4. Replaces all reference to tags, disciplines and users with relations.\
+5. Do testing scripts for CRUD.\
+6. Do update CRUD.\
+7. Do removal crud.\
+8. Allow picture/file upload.\
+\
+I\'92m thinking I should just do cloud code, get removal working right and then move into that complicated read stuff.\
+Then should move over to getting the relations in.\
+Then I can complete my test scripts for everything I got.\
+Then I move on to update and delete.\
+\
+At that point, I\'92ll have a complete code stable crud for events filter.\
+I then will have to decide if I want to stay using parse or move to node and mongo, recreating what I have.\
+professionally, I would much rather be able to build system from a language, rather then use another frontend.\
+on the other hand, it would give me that sweet admin for free and lots of other stuff\
+\
+Regardless, what I want is to use this code as the basis for a api.\
+that means putting a router on it and devising a solid url scheme for accessing all the functions within my CRUD\
+\
+once I have a fully working, tested api for this database, then we can work on building a frontend.\
+\
+}
