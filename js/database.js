@@ -2,7 +2,8 @@ window.ef_database = {
 	error:{
 		address_not_found:{code:"address_not_found" , message:"Error: Address not found."},
 		address_empty:{code:"address_empty", message:"Error: Google Maps Network error."},
-		no_type:{code:"no_type", message:"Error: No Null value provided."},
+		no_type:{code:"no_type", message:"Error: Null value provided."},
+		bad_type:{code:"bad_type", message:"Error: Incorrect value provided."},
 
 		buildError:function(code) {
 			return(code);
@@ -259,17 +260,63 @@ window.ef_database = {
 				var def = $.Deferred();
 				
 				var root = window.ef_database;
+				var CRUD = root.CRUD;
 				var helpers = root.helpers;
 				var Table = helpers.getTable(type);
 				var obj = new Table();
-
+				
 				var func = (type === "user")? "signUp":"save";
+				
+				var rPromises = [];
 
-				obj[func](data).done(function(results) {
-					def.resolve(results);
-				}).fail(function(error) {
-					def.reject(error);
+				_.each(data, function(obj, key){
+					if (_.isObject(obj)) {
+						var rel = (obj.hasOwnProperty('relation'))?obj.relation:false;
+
+						if (rel) {
+						//if this object is a relation, we want to do a search under the table, within the col column for value data
+						//get the first response and add to the relation (if array) or pointer (if obj)
+							if (_.isArray(obj.data)) {
+								_.each(obj.data, function(d) {
+									rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:d}],{}, {}, key, "relation"));
+								});
+							} else {
+								rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:obj.data}],{}, {}, key, "pointer"));
+							}
+						}
+					}
 				});
+
+				if (!_.isEmpty(rPromises)){
+					//if we have pending queries for relation items
+
+					$.when.apply(null, rPromises).done(function() {
+						var results = arguments;
+						
+						_.each(results, function(r){
+							if (r.results.length > 0) {
+								console.log(r);
+								// var relationCol = r.args[r.args.length-1];
+								// var relationItem = r.results[0].parseObj;
+							
+								// data[relationCol] = relationItem;
+							}
+						});
+
+						// obj[func](data).done(function(results) {
+						// 	def.resolve(results);
+						// }).fail(function(error) {
+						// 	def.reject(error);
+						// });
+					});
+
+				} else {
+					obj[func](data).done(function(results) {
+						def.resolve(results);
+					}).fail(function(error) {
+						def.reject(error);
+					});
+				}
 
 				return(def.promise());
 			}
@@ -290,7 +337,7 @@ window.ef_database = {
 
 					if (type in CRUD.creation) {
 						root.CRUD.creation['Event'](data).done(function(results){
-							def.resolve(results);
+							def.resolve(results, arguments);
 						});
 					} else {
 						root.CRUD.creation['default'](type, data).done(function(results){
@@ -311,17 +358,21 @@ window.ef_database = {
 			var root = window.ef_database;
 			var helpers = root.helpers;
 			var models =  root.models;
+			var error =  root.error;
+
 
 			type = type.capitalize();
 			var Table = helpers.getTable(type);
 			var query = new Parse.Query(Table);
 
+			var args = arguments;
+
 			if(_.isEmpty(query_params)){
-				pagination = undefined;
+				query_params = undefined;
 			}
 
 			if(_.isEmpty(ordering)){
-				pagination = undefined;
+				ordering = undefined;
 			}
 
 			if(_.isEmpty(pagination)){
@@ -330,6 +381,8 @@ window.ef_database = {
 
 			if (query_params !== undefined) {
 				_.each(query_params, function(obj){
+					obj.type = obj.type.trim();
+
 					switch(obj.type) {
 						case("range"):
 							query.greaterThanOrEqualTo(obj.column, obj.value.min);
@@ -338,11 +391,13 @@ window.ef_database = {
 						case("full_text"):
 							query.contains(obj.column, obj.value);
 							break;
-						case("equal", "in_array"):
+						case("in_array"):
+						case("equal"):
 							if (_.isArray(obj.value))
 								query.containedIn(obj.column, obj.value);
-							else
+							else {
 								query.equalTo(obj.column, obj.value);
+							}
 							break;
 						case("lessThen"):
 							query.lessThanOrEqualTo(obj.column, obj.value);
@@ -356,6 +411,8 @@ window.ef_database = {
 						case("withinMiles"):
 							query.withinMiles(obj.column, obj.value.point, obj.value.distance)
 							break;
+						default:
+							def.resolve(error.buildError(error.bad_type));
 					}
 				});
 
@@ -379,16 +436,17 @@ window.ef_database = {
 					query.limit(pagination.limit);
 					query.skip(pagination.page*pagination.limit);
 
-
 					query.find().done(function(results){
 						var r = _.map(results, function(obj){return(models.createObject(type, obj));});
-						def.resolve(r);
+						def.resolve({results:r, args:args});
+						
 					});
 				});
 			} else {
+
 				query.find().done(function(results){
 					var r = _.map(results, function(obj){return(models.createObject(type, obj));});
-					def.resolve(r);
+					def.resolve({results:r, args:args});
 				});
 			}
 

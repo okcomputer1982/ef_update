@@ -92,6 +92,8 @@ $('#venue_create_btn').on('click', function(e) {
 	var disciplineCheck = ef_database.helpers.listExists('discipline', 'title', data['disciplines']);
 
 	$.when(disciplineCheck, tagCheck).done(function(){
+
+
 		var results = arguments;
 		var existanceError = false;
 		var existanceTitle, existanceTable;
@@ -234,7 +236,7 @@ $('#event_read_btn').on('click', function(e) {
 });
 
 $('#venue_read_btn').on('click', function(e) {
-	var home = new Parse.GeoPoint({latitude:39.96512, longitude:-75.16259});
+	//var home = new Parse.GeoPoint({latitude:39.96512, longitude:-75.16259});
 
 	var query = [];//[{"column":"geoPoint", "type":"withinMiles", "value":{point:home, distance:0.56}}];
 	var ordering = {};//{column:"title",direction:"down"};
@@ -268,15 +270,18 @@ $('#user_read_btn').on('click', function(e) {
 
 $('#discipline_read_btn').on('click', function(e) {
 
-	var query = [];//[{"column":"title", "type":"equal", "value":["acting", "poetry"]}];
+	var query = [];//[{column:"description", type:"equal", value:"stuff"}];
 	var ordering = {};//{column:"title",direction:"down"};
 	var pagination = {};//{limit:5, page:0};
 
 	ef_database.CRUD.read("discipline", query, ordering, pagination)
 		.done(function(results){
+			console.log(results);
+			/*
 			_.each(results, function(obj) {
 				console.log(obj);
 			});
+			*/
 		}
 	);
 
