@@ -95,12 +95,12 @@
 						],
 						
 						'user':[
-							{username: 'person1', email: 'p1@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'one', 	telephone:'(234) 023-1232', public_user:true, description:'this', 				disciplines:{relation:true, table:'discipline', col:'title', data:['dis1', 'dis2']}, 			tags:{relation:true, table:'tag', col:'title', data:['tag8']}},
-							{username: 'person2', email: 'p2@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'two', 	telephone:'(234) 023-3423', public_user:true, description:'that', 				disciplines:{relation:true, table:'discipline', col:'title', data:['dis4', 'dis3', 'dis5']}, 	tags:[]},
-							{username: 'person3', email: 'p3@gmail.com', password:'1111', is_organization:true, 	first_name:'person', last_name:'three', telephone:'(234) 023-4444', public_user:true, description:'this that', 			disciplines:{relation:true, table:'discipline', col:'title', data:['dis1']}, 					tags:{relation:true, table:'tag', col:'title', data:['tag2']}},
-							{username: 'person4', email: 'p4@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'four', 	telephone:'(234) 023-1265', public_user:true, description:'other', 				disciplines:{relation:true, table:'discipline', col:'title', data:['dis4', 'dis2']}, 			tags:{relation:true, table:'tag', col:'title', data:['tag3']}},
-							{username: 'person5', email: 'p5@gmail.com', password:'1111', is_organization:true, 	first_name:'person', last_name:'five', 	telephone:'(234) 023-6643', public_user:true, description:'other also', 		disciplines:[], 																				tags:{relation:true, table:'tag', col:'title', data:['tag4']}},
-							{username: 'person6', email: 'p6@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'six', 	telephone:'(234) 023-7644', public_user:true, description:'also other this', 	disciplines:{relation:true, table:'discipline', col:'title', data:['dis1', 'dis2']}, 			tags:{relation:true, table:'tag', col:'title', data:['tag1']}}
+							{username: 'person1', email: 'p1@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'one', 	telephone:'(234) 023-1232', public_user:true, description:'this', 				disciplines:{relation:true, table:'discipline', col:'title', data:['dis1', 'dis2']}, 			tags:{relation:true, table:'tag', col:'title', data:['tag8']}}//,
+							// {username: 'person2', email: 'p2@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'two', 	telephone:'(234) 023-3423', public_user:true, description:'that', 				disciplines:{relation:true, table:'discipline', col:'title', data:['dis4', 'dis3', 'dis5']}, 	tags:[]},
+							// {username: 'person3', email: 'p3@gmail.com', password:'1111', is_organization:true, 	first_name:'person', last_name:'three', telephone:'(234) 023-4444', public_user:true, description:'this that', 			disciplines:{relation:true, table:'discipline', col:'title', data:['dis1']}, 					tags:{relation:true, table:'tag', col:'title', data:['tag2']}},
+							// {username: 'person4', email: 'p4@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'four', 	telephone:'(234) 023-1265', public_user:true, description:'other', 				disciplines:{relation:true, table:'discipline', col:'title', data:['dis4', 'dis2']}, 			tags:{relation:true, table:'tag', col:'title', data:['tag3']}},
+							// {username: 'person5', email: 'p5@gmail.com', password:'1111', is_organization:true, 	first_name:'person', last_name:'five', 	telephone:'(234) 023-6643', public_user:true, description:'other also', 		disciplines:[], 																				tags:{relation:true, table:'tag', col:'title', data:['tag4']}},
+							// {username: 'person6', email: 'p6@gmail.com', password:'1111', is_organization:false, 	first_name:'person', last_name:'six', 	telephone:'(234) 023-7644', public_user:true, description:'also other this', 	disciplines:{relation:true, table:'discipline', col:'title', data:['dis1', 'dis2']}, 			tags:{relation:true, table:'tag', col:'title', data:['tag1']}}
 						],
 
 						'venue':[
@@ -139,7 +139,7 @@
 			};
 
 			var createAll = false;
-			var createOnly = ['tag', 'discipline', 'venue'];
+			var createOnly = ['tag', 'discipline'];
 
 			var promises = [];
 			var promise = $.Deferred();
@@ -160,22 +160,78 @@
 
 			};
 
-			promise.resolve();
-			_.each(db, function(table, key){
-				if (createAll || (!createAll && _.contains(createOnly, key))) {
-					promise = promise.then(getPrintFunc("building " + key  + " table"));					
-					_.each(table, function(obj, idx) {
-						promise = promise.then(getFunc( ef_database.CRUD.create, [key, obj]));
-						promise = promise.then(getPrintFunc("	completed entry " + idx));
-					});
+			promises.push(ef_database.CRUD.read("tag", [{"column":"title", "type":"equal", "value":"tag1"}]));
+			promises.push(ef_database.CRUD.read("tag", [{"column":"title", "type":"equal", "value":"tag2"}]));
 
-					promise = promise.then(getPrintFunc("completed " + key  + " table"));
-				}
+			promises.push(ef_database.CRUD.read("discipline", [{"column":"title", "type":"equal", "value":"dis1"}]));
+			promises.push(ef_database.CRUD.read("discipline", [{"column":"title", "type":"equal", "value":"dis2"}]));
+
+			$.when.apply(null, promises).done(function(){
+				var tags = [],
+					 dis = [];
+
+				_.each(arguments, function(obj){
+					if (obj.results[0].type === "Tag") {
+						tags.push(obj.results[0].parseObj);
+					} else if (obj.results[0].type === "Discipline") {
+						dis.push(obj.results[0].parseObj);
+					}
+				});
+
+
+				console.log(tags);
+				console.log(dis);
+
+				var data = {"username":"u_name",
+					"email": "warrenlongmire@gmail.com",
+					"password":"111",
+					"is_organization":false,
+					'first_name':"test",
+					'last_name':"test",
+					'telephone':"215 333-3333",
+					'public_user':true,
+					'photos':null,
+					'social_media':{facebook:"facebook", website:"website", twitter:"twitter"},
+					"description":'ipsum'};
+
+				var user = new Parse.User();
+
+				user.signUp(data).done(function(results) {
+					//console.log(results);
+					var user = Parse.User.current();
+
+					console.log(tags);
+					var tagRel = user.relation('tags');
+					tagRel.add(tags);
+
+					console.log(dis);
+					var disRel = user.relation('disciplines');
+					disRel.add(dis);
+
+					user.save().done(function(e){
+						console.log(e);
+					}).fail(function(e){
+						console.log(e);
+					});
+				});
 			});
+
+			// promise.resolve();
+			// _.each(db, function(table, key){
+			// 	if (createAll || (!createAll && _.contains(createOnly, key))) {
+			// 		promise = promise.then(getPrintFunc("building " + key  + " table"));					
+			// 		_.each(table, function(obj, idx) {
+			// 			promise = promise.then(getFunc( ef_database.CRUD.create, [key, obj]));
+			// 			promise = promise.then(getPrintFunc("	completed entry " + idx));
+			// 		});
+
+			// 		promise = promise.then(getPrintFunc("completed " + key  + " table"));
+			// 	}
+			// });
 			
-			promise.then(function(e){
-				console.log("testing database complete.");
-			});
+			// promise.then(function(e){
+			// 	console.log("testing database complete.");
+			// });
 
 		},
 

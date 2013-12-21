@@ -188,6 +188,56 @@ window.ef_database = {
 			});
 
 			return(def.promise());
+		},
+
+		getRelationPromises:function(data) {
+			var rPromises = [];
+			var root = window.ef_database;
+			var CRUD = root.CRUD;
+
+			_.each(data, function(obj, key){
+				if (_.isObject(obj)) {
+					var rel = (obj.hasOwnProperty('relation'))?obj.relation:false;
+
+					if (rel) {
+					//if this object is a relation, we want to do a search under the table, within the col column for value data
+					//get the first response and add to the relation (if array) or pointer (if obj)
+						if (_.isArray(obj.data)) {
+							_.each(obj.data, function(d) {
+								rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:d}],{}, {}, key, "relation"));
+							});
+						} else {
+							rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:obj.data}],{}, {}, key, "pointer"));
+						}
+					}
+				}
+			});
+
+			return(rPromises);
+		},
+
+		processRelationPromises:function(data, results) {
+			var rel = {};		
+				
+			_.each(results, function(r){
+				if (r.results.length > 0) {
+					var relationCol = r.args[r.args.length-2];
+					var relationType = r.args[r.args.length-1];
+					var relationItem = r.results[0].parseObj;
+
+					if (relationType === "pointer") {
+						data[relationCol] = relationItem;
+					} else {
+						if (data.hasOwnProperty(relationCol)) {
+							delete data[relationCol];
+						}
+
+						obj.relation(relationCol).add(relationItem);
+					}
+				}
+			});
+
+			return(data);
 		}
 	},
 
@@ -267,47 +317,21 @@ window.ef_database = {
 				
 				var func = (type === "user")? "signUp":"save";
 				
-				var rPromises = [];
+				var rPromises = helpers.getRelationPromises(data);
 
-				_.each(data, function(obj, key){
-					if (_.isObject(obj)) {
-						var rel = (obj.hasOwnProperty('relation'))?obj.relation:false;
-
-						if (rel) {
-						//if this object is a relation, we want to do a search under the table, within the col column for value data
-						//get the first response and add to the relation (if array) or pointer (if obj)
-							if (_.isArray(obj.data)) {
-								_.each(obj.data, function(d) {
-									rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:d}],{}, {}, key, "relation"));
-								});
-							} else {
-								rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:obj.data}],{}, {}, key, "pointer"));
-							}
-						}
-					}
-				});
 
 				if (!_.isEmpty(rPromises)){
 					//if we have pending queries for relation items
 
 					$.when.apply(null, rPromises).done(function() {
 						var results = arguments;
+						data = helpers.processRelationPromises(data, results);
 						
-						_.each(results, function(r){
-							if (r.results.length > 0) {
-								console.log(r);
-								// var relationCol = r.args[r.args.length-1];
-								// var relationItem = r.results[0].parseObj;
-							
-								// data[relationCol] = relationItem;
-							}
+						obj[func](data).done(function(results) {
+							def.resolve(results);
+						}).fail(function(error) {
+							def.reject(error);
 						});
-
-						// obj[func](data).done(function(results) {
-						// 	def.resolve(results);
-						// }).fail(function(error) {
-						// 	def.reject(error);
-						// });
 					});
 
 				} else {
@@ -458,5 +482,34 @@ window.ef_database = {
 	//General functions
 	init:function(){
 		Parse.initialize("Qlbg8roXaC5pJZsFmxBgnxUzBcmNShAXNNbkhWuh", "WjaCUmBtcQC05RUJXhN0KkrEAssgkVCb1KtwqQrR");
+		var query = new Parse.Query(Parse.Object.extend("Tag"));
+		query.equalTo("title", 'tag1');
+		query.find().done(function(tag){
+			
+			var Venue = Parse.Object.extend("Venue");
+			var v = new Venue();
+			var data = {'title':"home",
+				'description':"lipsum",
+				'photos':['picture.png'],
+				'social_media': {facebook:"facebook", website:"website", twitter:"twitter"},
+				'address':"1618 Brown Street",
+				'city':"Philadelphia",
+				'state':"PA",
+				'zipcode':"19130"
+			};
+
+			console.log(tag);
+
+		
+			v.save(data).done(function(e) {
+				var rel = v.relation('tags');
+				rel.add(tag);
+
+				v.save().done(function(e){
+					console.log("here");
+				});
+			});
+			
+		})
 	}
 };
