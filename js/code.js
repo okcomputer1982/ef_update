@@ -227,9 +227,7 @@ $('#event_read_btn').on('click', function(e) {
 			if (_.isEmpty(results))
 				console.log("No results retieved.");
 
-			_.each(results, function(obj) {
-				console.log(obj);
-			});
+			console.log(results);
 		}
 	);
 
@@ -244,9 +242,7 @@ $('#venue_read_btn').on('click', function(e) {
 
 	ef_database.CRUD.read("venue", query, ordering, pagination)
 		.done(function(results){
-			_.each(results, function(obj) {
-				console.log(obj);
-			});
+			console.log(results);
 		}
 	);
 
@@ -260,9 +256,7 @@ $('#user_read_btn').on('click', function(e) {
 
 	ef_database.CRUD.read("user", query, ordering, pagination)
 		.done(function(results){
-			_.each(results, function(obj) {
-				console.log(obj);
-			});
+			console.log(results);
 		}
 	);
 
@@ -277,11 +271,6 @@ $('#discipline_read_btn').on('click', function(e) {
 	ef_database.CRUD.read("discipline", query, ordering, pagination)
 		.done(function(results){
 			console.log(results);
-			/*
-			_.each(results, function(obj) {
-				console.log(obj);
-			});
-			*/
 		}
 	);
 
@@ -291,13 +280,11 @@ $('#tag_read_btn').on('click', function(e) {
 	
 	var query = [{"column":"title", "type":"equal", "value":["tag1", "tag2"]}];
 	var ordering = {};//{column:"title",direction:"up"};
-	var pagination = {};//{limit:5, page:0};
+	var pagination = {limit:5, page:0};
 
 	ef_database.CRUD.read("tag", query, ordering, pagination)
 		.done(function(results){
-			_.each(results, function(obj) {
-				console.log(obj);
-			});
+			console.log(results);
 		}
 	);
 

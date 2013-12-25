@@ -5,7 +5,15 @@ window.ef_database = {
 		no_type:{code:"no_type", message:"Error: Null value provided."},
 		bad_type:{code:"bad_type", message:"Error: Incorrect value provided."},
 
-		buildError:function(code) {
+		build:function(code) {
+			return(code);
+		}
+	},
+
+	warning:{
+		no_entries_found:{code:"no_entries_found" , message:"Warning: Address not found."},
+		
+		build:function(code) {
 			return(code);
 		}
 	},
@@ -60,7 +68,7 @@ window.ef_database = {
 			var error = root.error;
 
 			if (_.isEmpty(address)){
-				def.resolve(error.buildError(error.address_empty));
+				def.resolve(error.build(error.address_empty));
 			}
 
 	      	geocoder = new google.maps.Geocoder();
@@ -68,7 +76,7 @@ window.ef_database = {
 	        	if (status == google.maps.GeocoderStatus.OK) {
 	        		def.resolve({latitude:results[0].geometry.location.lat(), longitude:results[0].geometry.location.lng()});
 	        	} else {
-	          		def.resolve(error.buildError(error.address_not_found));
+	          		def.resolve(error.build(error.address_not_found));
 	        	}
 	      	});
 
@@ -82,7 +90,7 @@ window.ef_database = {
 			var error = root.error;
 
 			if (_.isEmpty(type)) {
-				return(error.buildError(error.no_type));
+				return(error.build(error.no_type));
 			}
 
 			type = type.capitalize();
@@ -101,7 +109,7 @@ window.ef_database = {
 			var def = $.Deferred();
 
 			if (_.isEmpty(type)) {
-				def.resolve(error.buildError(error.no_type));
+				def.resolve(error.build(error.no_type));
 				return(def.promise());
 			}
 
@@ -122,7 +130,7 @@ window.ef_database = {
 			var error = root.error;
 
 			if (_.isEmpty(type) || type === "") {
-				def.resolve(error.buildError(error.no_type));
+				def.resolve(error.build(error.no_type));
 				return(def.promise());
 			}
 
@@ -191,17 +199,19 @@ window.ef_database = {
 		},
 
 		getRelationPromises:function(data) {
+			//finds all data entries that contain a relation, does a search for that related data and puts the result into an array of promises.
 			var rPromises = [];
 			var root = window.ef_database;
 			var CRUD = root.CRUD;
 
 			_.each(data, function(obj, key){
+
 				if (_.isObject(obj)) {
 					var rel = (obj.hasOwnProperty('relation'))?obj.relation:false;
 
 					if (rel) {
 					//if this object is a relation, we want to do a search under the table, within the col column for value data
-					//get the first response and add to the relation (if array) or pointer (if obj)
+					//get the first response and add to the relation (if array) or pointer (if obj)	
 						if (_.isArray(obj.data)) {
 							_.each(obj.data, function(d) {
 								rPromises.push(CRUD.read(obj.table, [{column:obj.col, type:'equal', value:d}],{}, {}, key, "relation"));
@@ -217,8 +227,11 @@ window.ef_database = {
 		},
 
 		processRelationPromises:function(data, results) {
+			//reseaves the results of a relation promise array replaces relation data with, in this case, the id of that item
+			//can be modified for direct object based relationships or index tables
+
 			var rel = {};		
-				
+			
 			_.each(results, function(r){
 				if (r.results.length > 0) {
 					var relationCol = r.args[r.args.length-2];
@@ -226,13 +239,13 @@ window.ef_database = {
 					var relationItem = r.results[0].parseObj;
 
 					if (relationType === "pointer") {
-						data[relationCol] = relationItem;
+						data[relationCol] = relationItem.id;
 					} else {
-						if (data.hasOwnProperty(relationCol)) {
-							delete data[relationCol];
+						if (!_.isArray(data[relationCol])) {
+							data[relationCol] = [];
 						}
 
-						obj.relation(relationCol).add(relationItem);
+						data[relationCol].push(relationItem.id);
 					}
 				}
 			});
@@ -269,7 +282,7 @@ window.ef_database = {
 				var def = $.Deferred(),
 					root = window.ef_database,
 					helpers = root.helpers,
-					eventOccurData = data.occurence,
+					eventOccurData = data.occurences,
 					eventData = data,
 					promises = [],
 					occurObjs = [];
@@ -279,28 +292,50 @@ window.ef_database = {
 					eventRow = new EventTable(),
 					occurObj = [];
 
-				delete eventData['occurence'];
 
 				//save occurence data
 				_.each(eventOccurData, function(obj){
 					var ecRow = new EventOccurTable();
 					
 					obj.recurs = (eventData.timing_mode === "recur_mode");
-					obj.event_data = eventRow;
 					
 					occurObj.push(ecRow);
 					promises.push(ecRow.save(obj));
 				});
 
-				Parse.Promise.when(promises).then(function() {
-					//create relation and then save the event data
-					var occur = eventRow.relation("occurences");
-					occur.add(occurObj);
+				///find all other instances of relations withn (createdBy, tags, disciplines, etc.)
+				var relationObjs = helpers.getRelationPromises(eventData);
 
-					eventRow.save(eventData).then(function(obj){
-						def.resolve(obj);
+				//get all the occurance data
+				Parse.Promise.when(promises).then(function() {
+
+					//get all their relations promises
+					$.when.apply(null, relationObjs).done(function() {
+						var results = arguments;
+
+						//collect the results of the relations(ids from their related objects) and add to the eventData
+						eventData = helpers.processRelationPromises(eventData, results);
+
+						//for each of the occurences, push it's id into the current event object
+						eventData['occurences']  = [];
+						_.each(occurObj, function(obj) {
+							eventData['occurences'].push(obj.id);
+						});
+						
+						eventRow.save(eventData).then(function(obj){
+							var id = obj.id;
+							var p = [];
+
+							_.each(occurObj, function(o){
+								o.set("event_data", id);
+								p.push(o.save());
+							});
+
+							Parse.Promise.when(p).then(function(e){
+								def.resolve(obj);
+							});
+						});
 					});
-					
 				});
 				
 				return(def.promise());
@@ -377,33 +412,31 @@ window.ef_database = {
 			return(def.promise());
 		},
 
-		read:function(type, query_params, ordering, pagination) {
-			var def = $.Deferred();
-			var root = window.ef_database;
-			var helpers = root.helpers;
-			var models =  root.models;
-			var error =  root.error;
+		reading:{
+			runQuery:function(query, type, args) {
+				var def = $.Deferred();
+				var root = window.ef_database;
+				var helpers = root.helpers;
+				var models =  root.models;
+				var error =  root.error;
+				var warning =  root.warning;
 
+				query.find().done(function(results){
+					if (_.isEmpty(results)) {
+						def.resolve(warning.build(warning.no_entries_found));
+					} else {
+						var r = _.map(results, function(obj){return(models.createObject(type, obj));});
+						def.resolve({results:r, args:args});
+					}
+				});
 
-			type = type.capitalize();
-			var Table = helpers.getTable(type);
-			var query = new Parse.Query(Table);
+				return(def.promise());
+			},
 
-			var args = arguments;
+			getQuery:function(query_params, query) {
+				if (query_params === undefined)
+					return(query);
 
-			if(_.isEmpty(query_params)){
-				query_params = undefined;
-			}
-
-			if(_.isEmpty(ordering)){
-				ordering = undefined;
-			}
-
-			if(_.isEmpty(pagination)){
-				pagination = undefined;
-			}
-
-			if (query_params !== undefined) {
 				_.each(query_params, function(obj){
 					obj.type = obj.type.trim();
 
@@ -436,44 +469,115 @@ window.ef_database = {
 							query.withinMiles(obj.column, obj.value.point, obj.value.distance)
 							break;
 						default:
-							def.resolve(error.buildError(error.bad_type));
+							def.resolve(error.build(error.bad_type));
 					}
 				});
 
-			}
+				return(query);
+			},
 
-			if (ordering !== undefined) {
-				if (ordering.direction === "up") {
-					query.ascending(ordering.column);
-				} else {
-					query.descending(ordering.column);
-				}
-			}
+			getPagination:function(pagination, query) {
+				var def = $.Deferred();
 
-			if (pagination !== undefined) {
-				query.count().done(function(count){
-					
+				query.count().done(function(count) {
+						
 					if (count < pagination.page*pagination.limit) {
 						pagination.page = Math.floor(count/pagination.limit);
 					}
 
 					query.limit(pagination.limit);
 					query.skip(pagination.page*pagination.limit);
-
-					query.find().done(function(results){
-						var r = _.map(results, function(obj){return(models.createObject(type, obj));});
-						def.resolve({results:r, args:args});
-						
-					});
+					
+					def.resolve(query);
 				});
-			} else {
 
-				query.find().done(function(results){
-					var r = _.map(results, function(obj){return(models.createObject(type, obj));});
-					def.resolve({results:r, args:args});
+				return(def.promise());
+			},
+
+			getOrdering:function(ordering, query) {
+				if (ordering !== undefined) {
+					
+					if (ordering.direction === "up") {
+						query.ascending(ordering.column);
+					} else {
+						query.descending(ordering.column);
+					}
+				}
+
+				return(query);
+			},
+
+			setParams:function(query_params, ordering, pagination) {
+				if(_.isEmpty(query_params)){
+					query_params = undefined;
+				}
+
+				if(_.isEmpty(ordering)){
+					ordering = undefined;
+				}
+
+				if(_.isEmpty(pagination)){
+					pagination = undefined;
+				}
+
+				return({query:query_params, ordering:ordering, pagination:pagination});
+			},
+
+			Event:function(type, query_params, ordering, pagination) {
+			},
+
+			default:function(type, query_params, ordering, pagination) {
+				var def = $.Deferred();
+				var root = window.ef_database;
+				var helpers = root.helpers;
+				var models =  root.models;
+				var read =  root.CRUD.reading;
+
+				var Table = helpers.getTable(type);
+				var query = new Parse.Query(Table);
+
+				var args = arguments;
+
+
+				var params = this.setParams(query_params, ordering, pagination);
+				query_params = params.query;
+				ordering = params.ordering;
+				pagination = params.pagination;
+
+				
+				query = read.getQuery(query_params, query);
+				query = read.getOrdering(ordering, query);
+				
+				if (pagination !== undefined) {
+					read.getPagination(pagination, query).done(function(q){
+						read.runQuery(query, type, args).done(function(results){
+							def.resolve(results);
+						});
+					});
+				} else {
+					read.runQuery(query, type, args).done(function(results){
+						def.resolve(results);
+					});
+				}
+
+				return(def.promise());
+			}
+		},
+
+		read:function(type, query_params, ordering, pagination) {
+			var def = $.Deferred();
+			var root = window.ef_database;
+			var CRUD = root.CRUD;
+
+			type = type.capitalize();
+
+			if (type in CRUD.reading) {
+
+			} else {
+				CRUD.reading['default'](type, query_params, ordering, pagination).done(function(results){
+					def.resolve(results);
 				});
 			}
-
 
 			return(def.promise());
 		}
@@ -482,34 +586,5 @@ window.ef_database = {
 	//General functions
 	init:function(){
 		Parse.initialize("Qlbg8roXaC5pJZsFmxBgnxUzBcmNShAXNNbkhWuh", "WjaCUmBtcQC05RUJXhN0KkrEAssgkVCb1KtwqQrR");
-		var query = new Parse.Query(Parse.Object.extend("Tag"));
-		query.equalTo("title", 'tag1');
-		query.find().done(function(tag){
-			
-			var Venue = Parse.Object.extend("Venue");
-			var v = new Venue();
-			var data = {'title':"home",
-				'description':"lipsum",
-				'photos':['picture.png'],
-				'social_media': {facebook:"facebook", website:"website", twitter:"twitter"},
-				'address':"1618 Brown Street",
-				'city':"Philadelphia",
-				'state':"PA",
-				'zipcode':"19130"
-			};
-
-			console.log(tag);
-
-		
-			v.save(data).done(function(e) {
-				var rel = v.relation('tags');
-				rel.add(tag);
-
-				v.save().done(function(e){
-					console.log("here");
-				});
-			});
-			
-		})
 	}
 };
