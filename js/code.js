@@ -218,8 +218,8 @@ $('#tag_create_btn').on('click', function(e) {
 ////Read Button Functions
 $('#event_read_btn').on('click', function(e) {
 
-	var query = {};//[{"column":"occurrence", "type":"equal", "value":{"date":"b", "time":"a"}}];
-	var ordering = {};//{column:"max_cost",direction:"up"};
+	var query = [{column:"start_date", type:"greaterThen", value:new Date()}, {column:"start_date", type:"lessThen", value:new Date(2014, 0, 30)}];
+	var ordering = {column:"start_date", direction:"up"};
 	var pagination = {};//{limit:5, page:0};
 
 	ef_database.CRUD.read("event", query, ordering, pagination)

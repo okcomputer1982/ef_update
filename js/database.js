@@ -19,10 +19,42 @@ window.ef_database = {
 	},
 
 	models:{
-		createObject:function(type, obj){
-			var e = obj.attributes;
+		recuranceSearch:function(rData, queryRange, eventRange){
+			var recurType = rData.recurance_data.type;
+			var recurRange = {start_date: rData.start_recurance, end_date:rData.end_recurance};
+			//get the smallest possible range of the recurance
+			var finalRange = {start_date:(queryRange.start_date > recurRange.start_date)?queryRange.start_date:recurRange.start_date,
+							  end_date:(queryRange.end_date < recurRange.end_date)?queryRange.end_date:recurRange.end_date};
+			var rtn = [];
 
-			$.extend(e, obj.attibutes);
+			switch(recurType){
+				case("everyday"):
+					//for each day in finalRange, create an event
+					var e = eventRange.end_date;
+
+					for(var s = finalRange.start_date; s <= finalRange.end_date; s.setDate(s.getDate() + 1)) {
+						var r = {start_date:new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0), end_date:new Date(e.getFullYear(), e.getMonth(), e.getDate(), 0, 0)};
+						rtn.push(r);
+						e.setDate(e.getDate() + 1);
+					}
+					break;
+				case("day_of_week"):
+					//each week within finalRange, create an event for each day of [day] within days for every week within [week] (999 denotes last week)
+					//so how do I do that.
+					//I already have means loop from the first day to the last day of a set range
+					//I need to find the next day that has day of the week
+					//and I need to find the week it occurs on [0,1,2,3, 999]
+					break;
+				case("day_of_month"):
+					break;	
+			}
+
+			return(rtn);
+		},
+
+		createObject:function(type, obj){
+			var e = $.extend({}, obj.attributes);
+
 			e.id = obj.id;
 			e.createdAt  = obj.createdAt;
 			e.updatedAt  = obj.updatedAt;
@@ -34,8 +66,36 @@ window.ef_database = {
 
 		createEvent:function(obj){
 			//gets the parse object and creates an event object
-
 			return(this.createObject("Event", obj));
+		},
+
+		createOccurEvent:function(eData, oData){
+			//gets the parse object and creates an event object
+			var rtn = this.createObject("Event", eData.parseObj);
+			$.extend(rtn, oData.attributes);
+			rtn.occurParseObj = oData;
+
+			return(rtn);
+		},
+
+		createRecurEvent:function(eData, rData, dateRange){
+			//gets the parse object and creates an event object
+			var rtn = [];
+			var root = this;
+			var eventRange = {start_date:rData.attributes.start_date, end_date:rData.attributes.end_date};
+			var dates = this.recuranceSearch(rData.attributes, dateRange, eventRange);
+
+			_.each(dates, function(d, idx){
+				var e = root.createObject("Event", eData.parseObj);
+
+				e.start_date = new Date(d.start_date.getFullYear(), d.start_date.getMonth(), d.start_date.getDate());
+				e.end_date = new Date(d.end_date.getFullYear(), d.end_date.getMonth(), d.end_date.getDate());
+				e.occurParseObj = rData;
+
+				rtn.push(e);
+			});
+
+			return(rtn);
 		},
 
 		createVenue:function(obj){
@@ -276,6 +336,8 @@ window.ef_database = {
 	},
 
 	CRUD: {
+		relationCols:["disciplines", "tags", "venue", "created_by", "admins", "occurences", "event_data", "admins", "parent", "member_of"],
+
 		//CRUD functions
 		creation:{
 			Event:function(data){
@@ -416,18 +478,12 @@ window.ef_database = {
 			runQuery:function(query, type, args) {
 				var def = $.Deferred();
 				var root = window.ef_database;
-				var helpers = root.helpers;
-				var models =  root.models;
-				var error =  root.error;
 				var warning =  root.warning;
+				var models = root.models;
 
 				query.find().done(function(results){
-					if (_.isEmpty(results)) {
-						def.resolve(warning.build(warning.no_entries_found));
-					} else {
-						var r = _.map(results, function(obj){return(models.createObject(type, obj));});
-						def.resolve({results:r, args:args});
-					}
+					var r = _.map(results, function(obj){return(models.createObject(type, obj));});
+					def.resolve({results:r, args:args});
 				});
 
 				return(def.promise());
@@ -524,26 +580,133 @@ window.ef_database = {
 			},
 
 			Event:function(type, query_params, ordering, pagination) {
+				var def = $.Deferred(),
+					root = window.ef_database,
+					read =  root.CRUD.reading,
+					helpers = root.helpers;
+					models = root.models;
+
+					eventTable = helpers.getTable("event"),
+					eventOccurTable = helpers.getTable("eventOccurences"),
+					dataQuery = new Parse.Query(eventTable),
+
+					args = arguments,
+					events = [];
+
+				//we we have two types of queries
+				var dataQueriesCol = ["title", "description", "disciplines", "tags", "venue", "min_cost", "max_cost", "cost", "timing_mode", "created_by", "admins"],
+					timeQueriesCol = ["start_date", "end_date", "time_mode", "start_time", "end_time", "recurs"];
+
+				//we need seperate queries based on data from queries based on time
+				var dataQueries = [],
+					timeOccurQueries = [],
+					timeRecurQueries = [];
+
+				//add default attributes if not present
+				var date_range = {};
+				_.each(query_params, function(obj){
+					if (obj.column === "start_date" && obj.type === "greaterThen") {
+						date_range.start_date = obj.value;
+					}
+
+					if (obj.column === "start_date" && obj.type === "lessThen") {
+						date_range.end_date = obj.value;
+					}
+				});
+
+				if (!date_range.hasOwnProperty("start_date")) {
+					date_range.start_date = new Date();
+					query_params.push({column:"start_date", type:"greaterThen", value:date_range.start_date});
+				}
+
+				if (!date_range.hasOwnProperty("end_date")) {
+					var d = new Date();
+					d.setDate(d.getDate() + 7);
+					date_range.end_date = d;
+					query_params.push({column:"start_date", type:"lessThen", value:date_range.end_date});
+				}
+
+				//loop through each query_param and create seperate parameters for recur and occur items
+				_.each(query_params, function(obj){
+					if (_.contains(dataQueriesCol, obj.column)) {
+						dataQueries.push(obj);
+					} else {
+
+						//add in recurance level query searches if nessisary
+						if (obj.column === "start_date") {
+							timeRecurQueries.push({column:"start_recurance", type:obj.type, value:obj.value});
+							timeOccurQueries.push(obj);
+						}
+						
+						if (obj.column === "end_date") {
+							timeRecurQueries.push({column:"end_recurance", type:obj.type, value:obj.value});
+							timeOccurQueries.push(obj);
+						}
+					}
+				})
+
+				//now, lets just do a search using the usual methods for dataQueuies
+				dataQuery = read.getQuery(dataQueries, dataQuery);
+				
+				//now that we have these, we will need to collect all of the occurances related to them
+				read.runQuery(dataQuery, type, args).done(function(eventDataArr){
+					var occurance_id = [];
+					
+					_.each(eventDataArr.results, function(obj){
+						occurance_id = occurance_id.concat(obj.occurences);
+					});
+					
+					//got it. Now we will need to eventOccur for all these items
+					//ideally filtering out those outside our current selected range
+
+					var rQuery = new Parse.Query(eventOccurTable),
+						oQuery = new Parse.Query(eventOccurTable);
+
+					rQuery.equalTo('recurs', true);
+					rQuery.containedIn('objectId', occurance_id);
+					read.getQuery(timeRecurQueries, rQuery);
+
+					oQuery.equalTo('recurs', false);
+					oQuery.containedIn('objectId', occurance_id);
+					read.getQuery(timeOccurQueries, oQuery);
+
+					Parse.Promise.when(oQuery.find(), rQuery.find()).then(function(oResults, rResults){
+						var results = [];
+						
+						//loop through each of occurance items
+						_.each(oResults, function(oData){
+							var eventDataItem = _.findWhere(eventDataArr.results, {id:oData.attributes.event_data}),
+								eModel = models.createOccurEvent(eventDataItem, oData);
+							events.push(eModel);
+						});
+
+						//loop through each of recurance items
+						_.each(rResults, function(rData){
+							var eventDataItem = _.findWhere(eventDataArr.results, {id:rData.attributes.event_data}),
+								eModel = models.createRecurEvent(eventDataItem, rData, date_range);
+
+							//retrieve the events generated by the recurances and concats them
+							events = events.concat(eModel);
+						});
+
+						def.resolve(events);
+					});
+				});
+
+
+				return(def.promise());
 			},
 
 			default:function(type, query_params, ordering, pagination) {
 				var def = $.Deferred();
 				var root = window.ef_database;
-				var helpers = root.helpers;
-				var models =  root.models;
 				var read =  root.CRUD.reading;
+				var helpers = root.helpers;
 
 				var Table = helpers.getTable(type);
 				var query = new Parse.Query(Table);
 
 				var args = arguments;
-
-
-				var params = this.setParams(query_params, ordering, pagination);
-				query_params = params.query;
-				ordering = params.ordering;
-				pagination = params.pagination;
-
 				
 				query = read.getQuery(query_params, query);
 				query = read.getOrdering(ordering, query);
@@ -567,12 +730,19 @@ window.ef_database = {
 		read:function(type, query_params, ordering, pagination) {
 			var def = $.Deferred();
 			var root = window.ef_database;
+			var helpers = root.helpers;
 			var CRUD = root.CRUD;
 
 			type = type.capitalize();
 
-			if (type in CRUD.reading) {
+			var params = CRUD.reading.setParams(query_params, ordering, pagination);
+			ordering = params.ordering;
+			pagination = params.pagination;
 
+			if (type in CRUD.reading) {
+				CRUD.reading[type](type, query_params, ordering, pagination).done(function(results){
+					def.resolve(results);
+				});
 			} else {
 				CRUD.reading['default'](type, query_params, ordering, pagination).done(function(results){
 					def.resolve(results);

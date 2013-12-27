@@ -1,7 +1,7 @@
 {\rtf1\ansi\ansicpg1252\cocoartf1265
 {\fonttbl\f0\froman\fcharset0 Times-Roman;}
 {\colortbl;\red255\green255\blue255;}
-\margl1440\margr1440\vieww25400\viewh14000\viewkind0
+\margl1440\margr1440\vieww12600\viewh14000\viewkind0
 \deftab720
 
 \itap1\trowd \taflags0 \trgaph108\trleft-108 \trbrdrt\brdrnil \trbrdrl\brdrnil \trbrdrt\brdrnil \trbrdrr\brdrnil 
@@ -878,6 +878,64 @@ ok, so here is what we are doing.\
 first, lets just do a search for basic event data (timeless)\
 it should be easy.\
 \
+_________________________\
+Wednesday Dec. 25th\
+\
+Merry Christmas.\
+\
+So, I\'92ve decided that relations will be handled directly, not automatically.\
+Which makes sense, as I can add these features in at the api level\
+so that means that the first stage of event querying should be exactly the same
+\i \
+
+\i0 _________________________\
+Thursday Dec. 26th\
+\
+ok\'85so I have all the occurrences and recurrences I need.\
+I have officially retrieved all the information nessiary to create my actual event entries\
+Now, I will need to \
+	loop through each event item\
+		loop through each occurrence\
+			find accompanying o/r type event data\
+			if occurs\
+				create new obj including\
+					event.id\
+					occurrence.id\
+					createdAt\
+					updatedAt\
+					type = \'93event\'94\
+					parseObj = occur object\
+					event data attributes\
+					eventoccurance attributes\
+			if recurs\
+				get eventoccurance recurance_data attribute\
+				generateRecurrance(startDate[start date of search or start_recurance whichever occurs last], \
+						         endDate [end date of search or end_recurance whichever occurs earliest],\
+						         recurance_data)\
+					switch on each type\
+					generate list of dates/time between each date\
+					return list of date/time pairs\
+				create a new obj with above attributes for each of the pairs indicated\
+				make parseObj = same event recurrence obj\
+			\
+			add obj to returning array\
+	return array\
+\
+and that should give us all the events within a given range\
+\
+that is how it would be done\'85.\
+ok\
+\
+you know what, it makes more sense for now to do this through each of our separate listings\'85.\
+so we loop through all of our occurrence listings\
+	and we create objects\
+\
+___________\
+done\
+now we loop through recur objects\
+	eventData should work the same\
+	but now we need to get a list of dates based on the the recurrence_data obj\
+	\
 
 \i \
 \
