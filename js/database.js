@@ -19,8 +19,40 @@ window.ef_database = {
 	},
 
 	models:{
+		getNextDay:function(day, d){
+			var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+			
+			while(date.getDay() !== day){
+				date.setDate(date.getDate()+1);
+			}
+
+			return(date);
+		},
+
+		getNthWeek:function(day) {
+			var nth = Math.floor(day/7);
+			if (day%7 === 0)
+				nth = nth - 1;
+
+			return(nth);
+		},
+
+		isLastWeek:function(date) {
+			var m = date.getMonth();
+			var numDays = XDate.getDaysInMonth(date.getFullYear(), date.getMonth());
+			
+			//find last day of the date's month
+			//move back until we get to current day
+			for(var d = new Date(date.getFullYear(), date.getMonth(), numDays); d.getDay() !== date.getDay(); d.setDate(d.getDate() - 1));
+
+			//getNthWeek and see if it is each to the days getNthWeek
+			return(this.getNthWeek(d.getDate()) === this.getNthWeek(date.getDate()));
+		},
+
 		recuranceSearch:function(rData, queryRange, eventRange){
-			var recurType = rData.recurance_data.type;
+			var root = this;
+			var recurData = rData.recurance_data;
+			var recurType = recurData.type;
 			var recurRange = {start_date: rData.start_recurance, end_date:rData.end_recurance};
 			//get the smallest possible range of the recurance
 			var finalRange = {start_date:(queryRange.start_date > recurRange.start_date)?queryRange.start_date:recurRange.start_date,
@@ -38,14 +70,38 @@ window.ef_database = {
 						e.setDate(e.getDate() + 1);
 					}
 					break;
+
 				case("day_of_week"):
-					//each week within finalRange, create an event for each day of [day] within days for every week within [week] (999 denotes last week)
-					//so how do I do that.
-					//I already have means loop from the first day to the last day of a set range
-					//I need to find the next day that has day of the week
-					//and I need to find the week it occurs on [0,1,2,3, 999]
+					//if we have a by_week limiter, get it:
+					var by_week = (recurData.hasOwnProperty("week"))?recurData.week:[];
+
+					//so first, find the first days of the week that exist within the range
+					var day_of_week = [];
+					_.each(recurData.day, function(day){
+						day_of_week.push(root.getNextDay(day, finalRange.start_date));
+					});
+
+					//get the days between the actual event length
+					var days_between = XDate(eventRange.start_date).diffDays(XDate(eventRange.end_date));
+
+					//then increment through each day and add seven days throughout the range
+					for(var s = finalRange.start_date; s <= finalRange.end_date; s.setDate(s.getDate() + 7)) {
+						_.each(day_of_week, function(d, idx){
+
+							//check if the week is within our week range
+							if (d <= finalRange.end_date && (_.isEmpty(by_week) || _.contains(by_week, root.getNthWeek(d.getDate())) || ( _.contains(by_week, 999) && root.isLastWeek(d) ) ) ) {
+								var r = {start_date:new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0), end_date:new Date(d.getFullYear(), d.getMonth(), d.getDate() + days_between, 0, 0)};
+								rtn.push(r);
+							}
+
+							d.setDate(d.getDate() + 7);
+						});
+					}
+
 					break;
+					
 				case("day_of_month"):
+
 					break;	
 			}
 
