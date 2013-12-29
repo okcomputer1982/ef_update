@@ -62,8 +62,7 @@ $('#event_create_btn').on('click', function(e){
 				if (obj.exists) {
 					ef_database.CRUD.create("event", data).done(function(obj){
 						console.log("Event Creation Successful");
-					}).fail(function(error){
-						console.log("Event Creation Error: " + error.message);
+						console.log(obj);
 					});
 				} else {
 					console.log("Event Creation Error: Venue " + data['venue'] + " does not exist.")
@@ -111,8 +110,7 @@ $('#venue_create_btn').on('click', function(e) {
 		} else {
 			ef_database.CRUD.create("venue", data).done(function(obj){
 				console.log("Venue Creation Successful");
-			}).fail(function(error){
-				console.log("Venue Creation Error: " + error.message);
+				console.log(obj);
 			});
 		}
 	});	
@@ -158,9 +156,7 @@ $('#user_create_btn').on('click', function(e) {
 		} else {
 			ef_database.CRUD.create("user", data).done(function(obj){
 				console.log("User Creation Successful");
-			}).fail(function(error){
-				console.log("User Creation Error: " + error.message);
-				console.log(error);
+				console.log(obj);
 			});
 		}
 	});
@@ -181,9 +177,6 @@ $('#discipline_create_btn').on('click', function(e) {
 				ef_database.CRUD.create("discipline", data, true, "title").done(function(obj){
 					console.log("Discipline Creation Successful");
 					console.log(obj);
-				}).fail(function(error){
-					console.log("Discipline Creation Error");
-					console.log(error);
 				});
 			} else {
 				console.log("Discipline Creation Error: " + obj.data + " already exists.");	
@@ -204,9 +197,6 @@ $('#tag_create_btn').on('click', function(e) {
 				ef_database.CRUD.create("tag", data, true, "title").done(function(obj){
 					console.log("Tag Creation Successful");
 					console.log(obj);
-				}).fail(function(error){
-					console.log("Tag Creation Error");
-					console.log(error);
 				});
 			} else {
 				console.log("Tag Creation Error:" + "Tag title " + data["title"] + " is not unique.")
@@ -218,16 +208,18 @@ $('#tag_create_btn').on('click', function(e) {
 ////Read Button Functions
 $('#event_read_btn').on('click', function(e) {
 
-	var query = [{column:"start_date", type:"greaterThen", value:new Date()}, {column:"start_date", type:"lessThen", value:new Date(2014, 0, 30)}];
-	var ordering = {column:"start_date", direction:"up"};
-	var pagination = {};//{limit:5, page:0};
+	var query = [{column:"start_date", type:"greaterThen", value:new Date()}, {column:"start_date", type:"lessThen", value:new Date(2014, 2, 30)}];
+	var ordering = {column:"start_date", direction:"down"};
+	var pagination = {limit:30, page:1};
 
 	ef_database.CRUD.read("event", query, ordering, pagination)
-		.done(function(results){
+		.done(function(results) {
 			if (_.isEmpty(results))
 				console.log("No results retieved.");
 
-			console.log(results);
+			_.each(results, function(obj, idx){
+				console.log(idx + " " + obj.id + " : " + obj[ordering.column]);
+			});
 		}
 	);
 

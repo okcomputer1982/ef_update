@@ -957,9 +957,73 @@ that\'92s some thug ass shit.\
 the last one is every xday of the month.\
 should be easy, but first comcast\
 \
+_________________________\
+and that is that friends.\
+events can be searched for with recur generation\
+\
+here is the thing though\
+\
+we still need to implement ordering and pagination for events\
+I mean if not here, where, you feel me?\
+\
+but, with generation, we almost have to do this after generation.\
+this means that both of these must be done after \
+\
+________________________\
+Saturday Dec. 28th\
+\
+So. events are in. Now we have to get ordering and pagination in place and that will finish up events.\
+\
+ordering is first.\
+\
+ok\'85ordering is done :)\
+\
+now the hard part\
+\
+ideally I\'92d like to add caching to this in particular, as we will need to retrieve all of these elements every time (unlike other queries)\
+\
+as a start, though, lets do it without caching (a unified caching solution may be worth exploring latter in the process.\
+\
+we have limit = the amount of results shown, and page = the set of those results we display\
+from an array, it should be as simple as slicing the array starting at page*(limit) with a length of limit\
+I will need to make sure the function defaults to the end of the list if it is too long, both otherwise it should be easy\'85\
 
 \i \
+
+\i0 so it\'92s in there!\
 \
-	\
+now\'85.more complex queries that go into relations are not supported here (events within a certain radius based on the venue for example, but I would feel more comfortable handling those at the API level.\
 \
-}
+For now, this is good.\
+\
+Lets move on to edit.\
+And remember, if you want to do that, you need to make sure the create returns an object each time.\
+I\'92m not sure if that is done yet or not.\
+It definitely is not for events.\
+\
+what comes after that?\
+\
+we have delete and then crud will be done (a full week ahead of schedule might I add)\
+\
+then I would prefer to move back to implementing a complete testing interface and making sure we have 100% coverage.\
+May lead to some reformatting\
+I\'92d love to do some research into plugin techniques, look at some code, see if there are some optimization thoughts out there I can make use of, even at this level.\
+\
+then again, I have no idea how slow this thing may be\
+\
+at any rate, there are a couple of directions I could go in from there:\
+	1. Make a user interface for the code as it is\
+	2. Switch from parse to mongo database interface.\
+	3. Get express up and running and make my true api interface.\
+\
+I kind of don\'92t want to do a user interface unless I can do it through the api, it almost gives false hope.\
+Nothing externally will change for a few weeks after that work.\
+So what I think is that I will just go ahead and have a local version of the api running after testing is complete.\
+That will also allow me to make a framework and write the code for more complex queries based on my routes.\
+\
+Then I will create a simple user interface.\
+Then I will do some tests for speed and look into optimization.\
+Then I will start to build some more complex user interfaces and make a solid framework around them.\
+This will also be a good time to populate the database with some real world data (don\'92t forget about that) maybe see about making an interface for scraping data, Facebook logins and mailing list integration. \
+\
+beta will be just a full site and mobile version for input and display.}

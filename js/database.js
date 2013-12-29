@@ -19,95 +19,6 @@ window.ef_database = {
 	},
 
 	models:{
-		getNextDay:function(day, d){
-			var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
-			
-			while(date.getDay() !== day){
-				date.setDate(date.getDate()+1);
-			}
-
-			return(date);
-		},
-
-		getNthWeek:function(day) {
-			var nth = Math.floor(day/7);
-			if (day%7 === 0)
-				nth = nth - 1;
-
-			return(nth);
-		},
-
-		isLastWeek:function(date) {
-			var m = date.getMonth();
-			var numDays = XDate.getDaysInMonth(date.getFullYear(), date.getMonth());
-			
-			//find last day of the date's month
-			//move back until we get to current day
-			for(var d = new Date(date.getFullYear(), date.getMonth(), numDays); d.getDay() !== date.getDay(); d.setDate(d.getDate() - 1));
-
-			//getNthWeek and see if it is each to the days getNthWeek
-			return(this.getNthWeek(d.getDate()) === this.getNthWeek(date.getDate()));
-		},
-
-		recuranceSearch:function(rData, queryRange, eventRange){
-			var root = this;
-			var recurData = rData.recurance_data;
-			var recurType = recurData.type;
-			var recurRange = {start_date: rData.start_recurance, end_date:rData.end_recurance};
-			//get the smallest possible range of the recurance
-			var finalRange = {start_date:(queryRange.start_date > recurRange.start_date)?queryRange.start_date:recurRange.start_date,
-							  end_date:(queryRange.end_date < recurRange.end_date)?queryRange.end_date:recurRange.end_date};
-			var rtn = [];
-
-			switch(recurType){
-				case("everyday"):
-					//for each day in finalRange, create an event
-					var e = eventRange.end_date;
-
-					for(var s = finalRange.start_date; s <= finalRange.end_date; s.setDate(s.getDate() + 1)) {
-						var r = {start_date:new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0), end_date:new Date(e.getFullYear(), e.getMonth(), e.getDate(), 0, 0)};
-						rtn.push(r);
-						e.setDate(e.getDate() + 1);
-					}
-					break;
-
-				case("day_of_week"):
-					//if we have a by_week limiter, get it:
-					var by_week = (recurData.hasOwnProperty("week"))?recurData.week:[];
-
-					//so first, find the first days of the week that exist within the range
-					var day_of_week = [];
-					_.each(recurData.day, function(day){
-						day_of_week.push(root.getNextDay(day, finalRange.start_date));
-					});
-
-					//get the days between the actual event length
-					var days_between = XDate(eventRange.start_date).diffDays(XDate(eventRange.end_date));
-
-					//then increment through each day and add seven days throughout the range
-					for(var s = finalRange.start_date; s <= finalRange.end_date; s.setDate(s.getDate() + 7)) {
-						_.each(day_of_week, function(d, idx){
-
-							//check if the week is within our week range
-							if (d <= finalRange.end_date && (_.isEmpty(by_week) || _.contains(by_week, root.getNthWeek(d.getDate())) || ( _.contains(by_week, 999) && root.isLastWeek(d) ) ) ) {
-								var r = {start_date:new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0), end_date:new Date(d.getFullYear(), d.getMonth(), d.getDate() + days_between, 0, 0)};
-								rtn.push(r);
-							}
-
-							d.setDate(d.getDate() + 7);
-						});
-					}
-
-					break;
-					
-				case("day_of_month"):
-
-					break;	
-			}
-
-			return(rtn);
-		},
-
 		createObject:function(type, obj){
 			var e = $.extend({}, obj.attributes);
 
@@ -136,10 +47,13 @@ window.ef_database = {
 
 		createRecurEvent:function(eData, rData, dateRange){
 			//gets the parse object and creates an event object
+			var root = window.ef_database;
+			var helpers = root.helpers;
+
 			var rtn = [];
 			var root = this;
 			var eventRange = {start_date:rData.attributes.start_date, end_date:rData.attributes.end_date};
-			var dates = this.recuranceSearch(rData.attributes, dateRange, eventRange);
+			var dates = helpers.recuranceSearch(rData.attributes, dateRange, eventRange);
 
 			_.each(dates, function(d, idx){
 				var e = root.createObject("Event", eData.parseObj);
@@ -367,6 +281,110 @@ window.ef_database = {
 			});
 
 			return(data);
+		},
+
+		getNextDay:function(day, d){
+			var date = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+			
+			while(date.getDay() !== day){
+				date.setDate(date.getDate()+1);
+			}
+
+			return(date);
+		},
+
+		getNthWeek:function(day) {
+			var nth = Math.floor(day/7);
+			if (day%7 === 0)
+				nth = nth - 1;
+
+			return(nth);
+		},
+
+		isLastWeek:function(date) {
+			var root = window.ef_database;
+			var helpers = root.helpers;
+			var m = date.getMonth();
+			var numDays = XDate.getDaysInMonth(date.getFullYear(), date.getMonth());
+			
+			//find last day of the date's month
+			//move back until we get to current day
+			for(var d = new Date(date.getFullYear(), date.getMonth(), numDays); d.getDay() !== date.getDay(); d.setDate(d.getDate() - 1));
+
+			//getNthWeek and see if it is each to the days getNthWeek
+			return(helpers.getNthWeek(d.getDate()) === helpers.getNthWeek(date.getDate()));
+		},
+
+		recuranceSearch:function(rData, queryRange, eventRange){
+			var root = window.ef_database;
+			var helpers = root.helpers;
+
+			var recurData = rData.recurance_data;
+			var recurType = recurData.type;
+			var recurRange = {start_date: rData.start_recurance, end_date:rData.end_recurance};
+			//get the smallest possible range of the recurance
+			var finalRange = {start_date:(queryRange.start_date > recurRange.start_date)?queryRange.start_date:recurRange.start_date,
+							  end_date:(queryRange.end_date < recurRange.end_date)?queryRange.end_date:recurRange.end_date};
+			var rtn = [];
+
+			switch(recurType){
+				case("everyday"):
+					//for each day in finalRange, create an event
+					var e = eventRange.end_date;
+
+					for(var s = finalRange.start_date; s <= finalRange.end_date; s.setDate(s.getDate() + 1)) {
+						var r = {start_date:new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0), end_date:new Date(e.getFullYear(), e.getMonth(), e.getDate(), 0, 0)};
+						rtn.push(r);
+						e.setDate(e.getDate() + 1);
+					}
+					break;
+
+				case("day_of_week"):
+					//if we have a by_week limiter, get it:
+					var by_week = (recurData.hasOwnProperty("week"))?recurData.week:[];
+
+					//so first, find the first days of the week that exist within the range
+					var day_of_week = [];
+
+					_.each(recurData.day, function(day){
+						day_of_week.push(helpers.getNextDay(day, finalRange.start_date));
+					});
+
+					//get the days between the actual event length
+					var days_between = XDate(eventRange.start_date).diffDays(XDate(eventRange.end_date));
+
+					//then increment through each day and add seven days throughout the range
+					for(var s = finalRange.start_date; s <= finalRange.end_date; s.setDate(s.getDate() + 7)) {
+						_.each(day_of_week, function(d, idx){
+
+							//check if the week is within our week range
+							if (d <= finalRange.end_date && (_.isEmpty(by_week) || _.contains(by_week, helpers.getNthWeek(d.getDate())) || ( _.contains(by_week, 999) && helpers.isLastWeek(d) ) ) ) {
+								var r = {start_date:new Date(d.getFullYear(), d.getMonth(), d.getDate(), 0, 0), end_date:new Date(d.getFullYear(), d.getMonth(), d.getDate() + days_between, 0, 0)};
+								rtn.push(r);
+							}
+
+							d.setDate(d.getDate() + 7);
+						});
+					}
+
+					break;
+
+				case("day_of_month"):
+					var days_between = XDate(eventRange.start_date).diffDays(XDate(eventRange.end_date));
+					var s = finalRange.start_date;
+					s.setDate(recurData.day);
+
+					for(; s <= finalRange.end_date; s.setMonth(s.getMonth() + 1)) {
+						if (s <= finalRange.end_date) {
+							var r = {start_date:new Date(s.getFullYear(), s.getMonth(), s.getDate(), 0, 0), end_date:new Date(s.getFullYear(), s.getMonth(), s.getDate() + days_between, 0, 0)};
+							rtn.push(r);
+						}
+					}
+
+					break;
+			}
+
+			return(rtn);
 		}
 	},
 
@@ -395,7 +413,20 @@ window.ef_database = {
 		relationCols:["disciplines", "tags", "venue", "created_by", "admins", "occurences", "event_data", "admins", "parent", "member_of"],
 
 		//CRUD functions
-		creation:{
+		creation:{			
+			runCreate:function(data, type, new_entry){
+				var def = $.Deferred();	
+				var root = window.ef_database;
+				var models = root.models;
+				var func = (type === "user")? "signUp":"save";
+				
+				new_entry[func](data).done(function(saved_entry) {
+					def.resolve(models.createObject(type, saved_entry));
+				});
+
+				return(def.promise());
+			},
+
 			Event:function(data){
 				var def = $.Deferred(),
 					root = window.ef_database,
@@ -464,11 +495,11 @@ window.ef_database = {
 				
 				var root = window.ef_database;
 				var CRUD = root.CRUD;
+				var create = CRUD.creation;
 				var helpers = root.helpers;
+
 				var Table = helpers.getTable(type);
-				var obj = new Table();
-				
-				var func = (type === "user")? "signUp":"save";
+				var new_entry = new Table();
 				
 				var rPromises = helpers.getRelationPromises(data);
 
@@ -480,18 +511,15 @@ window.ef_database = {
 						var results = arguments;
 						data = helpers.processRelationPromises(data, results);
 						
-						obj[func](data).done(function(results) {
+
+						create.runCreate(data, type, new_entry).done(function(results) {
 							def.resolve(results);
-						}).fail(function(error) {
-							def.reject(error);
 						});
 					});
 
 				} else {
-					obj[func](data).done(function(results) {
+					create.runCreate(data, type, new_entry).done(function(results) {
 						def.resolve(results);
-					}).fail(function(error) {
-						def.reject(error);
 					});
 				}
 
@@ -522,9 +550,6 @@ window.ef_database = {
 						});
 					}
 
-				})
-				.fail(function(){
-
 				});
 
 			return(def.promise());
@@ -534,7 +559,6 @@ window.ef_database = {
 			runQuery:function(query, type, args) {
 				var def = $.Deferred();
 				var root = window.ef_database;
-				var warning =  root.warning;
 				var models = root.models;
 
 				query.find().done(function(results){
@@ -707,7 +731,7 @@ window.ef_database = {
 				//now that we have these, we will need to collect all of the occurances related to them
 				read.runQuery(dataQuery, type, args).done(function(eventDataArr){
 					var occurance_id = [];
-					
+
 					_.each(eventDataArr.results, function(obj){
 						occurance_id = occurance_id.concat(obj.occurences);
 					});
@@ -736,6 +760,7 @@ window.ef_database = {
 							events.push(eModel);
 						});
 
+					
 						//loop through each of recurance items
 						_.each(rResults, function(rData){
 							var eventDataItem = _.findWhere(eventDataArr.results, {id:rData.attributes.event_data}),
@@ -744,6 +769,23 @@ window.ef_database = {
 							//retrieve the events generated by the recurances and concats them
 							events = events.concat(eModel);
 						});
+
+						//and now we handle ordering
+						if (ordering !== undefined) {
+							events = _.sortBy(events, ordering.column);
+
+	
+							if (ordering.direction === "up") {
+								events = events.reverse();
+							}						
+						}
+
+						//and then pagination
+						if (pagination !== undefined) {
+							var start_item = pagination.page*pagination.limit;
+							var end_item = start_item + pagination.limit;
+							events = events.slice(start_item, (end_item < events.length)?end_item:events.length);
+						}
 
 						def.resolve(events);
 					});
